@@ -22,7 +22,7 @@ exports.saveFile = async (req, res) => {
           fileSecURL: encryptedSecureURL,
         },
       });
-      return res.status(201).json({ msg: "File saved successfully" });
+      return res.status(201).json({ msg: "Encrypted File URLS Saved" });
     }
   } catch (error) {
     res.status(500).json({

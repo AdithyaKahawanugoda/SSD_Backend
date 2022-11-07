@@ -17,7 +17,7 @@ exports.saveMessage = async (req, res) => {
           $set: { content: encryptedText },
         }
       );
-      return res.status(201).json({ msg: "New message saved" });
+      return res.status(201).json({ msg: "Encrypted Message Saved" });
     } else {
       return res.status(400).json({ msg: "Validation failed" });
     }
@@ -62,5 +62,20 @@ const integrityCheck = async (objId, content) => {
     return res
       .status(400)
       .json({ msg: "Error in integrityCheck controller-" + error });
+  }
+};
+
+exports.decryptTestEndpoint = async (req, res) => {
+  const { cipherText } = req.body;
+  try {
+    const decryptedText = CryptoJS.AES.decrypt(
+      cipherText,
+      process.env.ENCRYPTION_KEY
+    ).toString(CryptoJS.enc.Utf8);
+    return res.status(201).json(decryptedText);
+  } catch (error) {
+    return res.status(500).json({
+      msg: "Error in decryptTestEndpoint controller-" + error,
+    });
   }
 };

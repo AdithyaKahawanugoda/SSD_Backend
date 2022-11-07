@@ -7,15 +7,20 @@ const {
   logout,
   loginFailure,
   loginSuccess,
+  getUser,
 } = require("../controllers/auth-controller");
 const passport = require("passport");
-const { protectedAdmin } = require("../middlewares/auth-middleware");
+const {
+  protectedAdmin,
+  protectedUser,
+} = require("../middlewares/auth-middleware");
 
 router.route("/register").post(protectedAdmin, register);
 router.route("/login").post(login);
 router.route("/logout").get(logout);
 router.route("/login/success").get(loginSuccess);
 router.route("/login/failed").get(loginFailure);
+router.route("/profile").get(protectedUser, getUser);
 
 router
   .route("/google")

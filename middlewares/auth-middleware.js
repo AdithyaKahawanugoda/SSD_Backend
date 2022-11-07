@@ -108,6 +108,35 @@ exports.protectedWorkerOrManager = async (req, res, next) => {
   }
 };
 
+exports.protectedUser = async (req, res, next) => {
+  const decoded = tokenValidate(req, res);
+  if (req.isAuthenticated() === false) {
+    return res
+      .status(401)
+      .json({ msg: "Your session has been expired, please login again" });
+  } else if (decoded && decoded.hasOwnProperty("objId")) {
+    try {
+      const user = await UserModel.findById(decoded.objId);
+      if (!user) {
+        noUserResponse(res);
+      } else if (
+        user.accountType !== "WORKER" &&
+        user.accountType !== "ADMIN" &&
+        user.accountType !== "MANAGER"
+      ) {
+        accessDeniedResponse(res);
+      } else {
+        req.user = user;
+        next();
+      }
+    } catch (err) {
+      return res
+        .status(401)
+        .json({ msg: "Something went wrong, access denied" });
+    }
+  }
+};
+
 const tokenValidate = (reqObj, res) => {
   let token;
   let decoded;

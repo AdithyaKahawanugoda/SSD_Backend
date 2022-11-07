@@ -1,7 +1,6 @@
 require("dotenv").config();
 const validator = require("validator");
 const UserModel = require("../models/user-model");
-// const SendEmail = require("../utils/email-sender");
 
 exports.register = async (req, res) => {
   const { email, password, username, accountType } = req.body;
@@ -102,6 +101,26 @@ exports.logout = async (req, res) => {
     }
     res.redirect(process.env.CLIENT_BASE_URL);
   });
+};
+
+exports.getUser = async (req, res) => {
+  if (req.user) {
+    const username = req.user.username;
+    let googleDisplayName = "";
+    let profilePicture = "";
+
+    if (req?.user?.googleAuth) {
+      googleDisplayName = req.user.googleAuth.name;
+      profilePicture = req.user.googleAuth.profilePicture;
+    }
+    res.status(200).json({
+      username,
+      googleDisplayName,
+      profilePicture,
+    });
+  } else {
+    res.status(403).json({ message: "Not Authorized" });
+  }
 };
 
 const findEmailDuplicates = async (email, res) => {
