@@ -32,8 +32,8 @@ app.use(
     store: MongoStore.create({ mongoUrl: URI, dbName: "ssd_db" }),
     cookie: {
       secure: true,
-      expires: new Date(Date.now() + 2 * 60000).toISOString(),
-      maxAge: 2 * 60000,
+      expires: new Date(Date.now() + 10 * 60000).toISOString(),
+      maxAge: 10 * 60000,
     },
   })
 );
