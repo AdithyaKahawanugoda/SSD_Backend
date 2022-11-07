@@ -1,6 +1,7 @@
+require("dotenv").config();
 const validator = require("validator");
 const UserModel = require("../models/user-model");
-const SendEmail = require("../utils/email-sender");
+// const SendEmail = require("../utils/email-sender");
 
 exports.register = async (req, res) => {
   const { email, password, username, accountType } = req.body;
@@ -25,7 +26,7 @@ exports.register = async (req, res) => {
         username,
         accountType,
       });
-      await SendEmail(email, password, "http://localhost:3000/");
+      // await SendEmail(email, password, process.env.CLIENT_BASE_URL);
       return res.status(201).json({ msg: "Registration is done!" });
     } catch (error) {
       return res.status(500).json({
@@ -67,9 +68,44 @@ exports.login = async (req, res, next) => {
   }
 };
 
+exports.loginSuccess = async (req, res, next) => {
+  if (req.user) {
+    const user = await UserModel.findOne({ email: req.user.email }).select(
+      "+password"
+    );
+    if (!user) {
+      return res.status(422).json({
+        msg: "Can not find the user, please check the email again",
+      });
+    }
+    const token = user.getSignedToken();
+    const userAccountType = user.accountType;
+    res.status(200).json({
+      msg: "Successfully Logged In",
+      user: req.user,
+      token,
+      userAccountType,
+    });
+  } else {
+    res.status(403).json({ message: "Not Authorized" });
+  }
+};
+
+exports.loginFailure = async (req, res) => {
+  res.redirect(process.env.CLIENT_BASE_URL);
+};
+
+exports.logout = async (req, res) => {
+  req.logout(function (err) {
+    if (err) {
+      return next(err);
+    }
+    res.redirect(process.env.CLIENT_BASE_URL);
+  });
+};
+
 const findEmailDuplicates = async (email, res) => {
   let existingAccount = null;
-
   try {
     existingAccount = await UserModel.findOne({ email: email });
     if (existingAccount) {

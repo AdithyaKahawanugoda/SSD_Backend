@@ -2,29 +2,41 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-const UserSchema = new mongoose.Schema({
-  username: {
-    type: String,
+const UserSchema = new mongoose.Schema(
+  {
+    username: {
+      type: String,
+    },
+    email: {
+      type: String,
+      required: [true, "Please provide a email"],
+      unique: true,
+      match: [
+        /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/,
+        "Please provide a valid email",
+      ],
+      lowercase: true,
+    },
+    password: {
+      type: String,
+      required: [true, "Please provide a password"],
+      minlength: 8,
+      select: false,
+    },
+    accountType: {
+      type: String,
+      enum: ["WORKER", "ADMIN", "MANAGER"],
+      default: "WORKER",
+    },
+    googleAuth: {
+      googleId: String,
+      gmail: String,
+      name: String,
+      profilePicture: String,
+    },
   },
-  email: {
-    type: String,
-    required: [true, "Please provide a email"],
-    unique: true,
-    match: [/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, "Please provide a valid email"],
-    lowercase: true,
-  },
-  password: {
-    type: String,
-    required: [true, "Please provide a password"],
-    minlength: 8,
-    select: false,
-  },
-  accountType: {
-    type: String,
-    enum: ["WORKER", "ADMIN", "MANAGER"],
-    default: "WORKER",
-  },
-});
+  { timestamps: true }
+);
 
 // by using mongoose pre hook with save we run this code segment before mongoose save data on db
 UserSchema.pre("save", async function (next) {

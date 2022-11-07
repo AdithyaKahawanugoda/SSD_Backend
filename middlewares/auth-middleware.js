@@ -1,34 +1,14 @@
+require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const UserModel = require("../models/user-model");
 
-exports.protectedUser = async (req, res, next) => {
-  const decoded = tokenValidate(req, res);
-  if (decoded && decoded.hasOwnProperty("objId")) {
-    try {
-      const user = await UserModel.findById(decoded.objId);
-      if (!user) {
-        noUserResponse(res);
-      } else if (
-        user.accountType !== "WORKER" &&
-        user.accountType !== "ADMIN" &&
-        user.accountType !== "MANAGER"
-      ) {
-        accessDeniedResponse(res);
-      } else {
-        req.user = user;
-        next();
-      }
-    } catch (err) {
-      return res
-        .status(401)
-        .json({ msg: "Something went wrong, access denied" });
-    }
-  }
-};
-
 exports.protectedAdmin = async (req, res, next) => {
   const decoded = tokenValidate(req, res);
-  if (decoded && decoded.hasOwnProperty("objId")) {
+  if (req.isAuthenticated() === false) {
+    return res
+      .status(401)
+      .json({ msg: "Your session has been expired, please login again" });
+  } else if (decoded && decoded.hasOwnProperty("objId")) {
     try {
       const user = await UserModel.findById(decoded.objId);
       if (!user) {
@@ -49,7 +29,11 @@ exports.protectedAdmin = async (req, res, next) => {
 
 exports.protectedWorker = async (req, res, next) => {
   const decoded = tokenValidate(req, res);
-  if (decoded && decoded.hasOwnProperty("objId")) {
+  if (req.isAuthenticated() === false) {
+    return res
+      .status(401)
+      .json({ msg: "Your session has been expired, please login again" });
+  } else if (decoded && decoded.hasOwnProperty("objId")) {
     try {
       const user = await UserModel.findById(decoded.objId);
       if (!user) {
@@ -69,18 +53,19 @@ exports.protectedWorker = async (req, res, next) => {
   }
 };
 
-exports.protectedWorkerOrManager = async (req, res, next) => {
+exports.protectedManager = async (req, res, next) => {
   const decoded = tokenValidate(req, res);
-  if (decoded && decoded.hasOwnProperty("objId")) {
+  if (req.isAuthenticated() === false) {
+    return res
+      .status(401)
+      .json({ msg: "Your session has been expired, please login again" });
+  } else if (decoded && decoded.hasOwnProperty("objId")) {
     try {
       const user = await UserModel.findById(decoded.objId);
       if (!user) {
         noUserResponse(res);
-      } else if (
-        user.accountType !== "WORKER" &&
-        user.accountType !== "MANAGER"
-      ) {
-        console.log("protectedWorkerOrManager" + user.accountType);
+      } else if (user.accountType !== "MANAGER") {
+        console.log(user.accountType);
         accessDeniedResponse(res);
       } else {
         req.user = user;
@@ -94,15 +79,22 @@ exports.protectedWorkerOrManager = async (req, res, next) => {
   }
 };
 
-exports.protectedManager = async (req, res, next) => {
+exports.protectedWorkerOrManager = async (req, res, next) => {
   const decoded = tokenValidate(req, res);
-  if (decoded && decoded.hasOwnProperty("objId")) {
+  if (req.isAuthenticated() === false) {
+    return res
+      .status(401)
+      .json({ msg: "Your session has been expired, please login again" });
+  } else if (decoded && decoded.hasOwnProperty("objId")) {
     try {
       const user = await UserModel.findById(decoded.objId);
       if (!user) {
         noUserResponse(res);
-      } else if (user.accountType !== "MANAGER") {
-        console.log(user.accountType);
+      } else if (
+        user.accountType !== "WORKER" &&
+        user.accountType !== "MANAGER"
+      ) {
+        console.log("protectedWorkerOrManager" + user.accountType);
         accessDeniedResponse(res);
       } else {
         req.user = user;

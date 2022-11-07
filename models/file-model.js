@@ -1,42 +1,34 @@
 const mongoose = require("mongoose");
 
-const NoteSchema = new mongoose.Schema({
-  // file: {
-  //   filePublicId: {
-  //     type: String,
-  //     required: [
-  //       true,
-  //       "Error with cloudinary service! Can not find the file URL.",
-  //     ],
-  //   },
-  //   fileSecURL: {
-  //     type: String,
-  //     required: [
-  //       true,
-  //       "Error with cloudinary service! Can not find the file URL.",
-  //     ],
-  //   },
-  // },
-  file: {
-    type: String,
-    uppercase: true,
-  },
-  senderEmail: {
-    type: String,
-  },
-  allowedRoles: [],
-  time: {
-    createdAt: {
-      type: Date,
-      default: Date.now,
+const FileSchema = new mongoose.Schema(
+  {
+    file: {
+      filePublicId: {
+        type: String,
+        required: [
+          false,
+          "Error with Cloudinary service! Can not find the file URL.",
+        ],
+      },
+      fileSecURL: {
+        type: String,
+        required: [
+          false,
+          "Error with Cloudinary service! Can not find the file URL.",
+        ],
+      },
     },
-    updatedAt: {
-      type: Date,
-      default: Date.now,
+    senderEmail: {
+      type: String,
+    },
+    hash: {
+      words: [],
+      sigBytes: Number,
     },
   },
-});
+  { timestamps: true }
+);
 
-const Note = mongoose.model("file", NoteSchema);
+const File = mongoose.model("file", FileSchema);
 
-module.exports = Note;
+module.exports = File;

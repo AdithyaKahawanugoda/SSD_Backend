@@ -1,24 +1,20 @@
 const mongoose = require("mongoose");
 
-const NoteSchema = new mongoose.Schema({
-  senderEmail: {
-    type: String,
-  },
-  content: {
-    type: String,
-  },
-  allowedRoles: [],
-  time: {
-    createdAt: {
-      type: Date,
-      default: Date.now,
+const NoteSchema = new mongoose.Schema(
+  {
+    senderEmail: {
+      type: String,
     },
-    updatedAt: {
-      type: Date,
-      default: Date.now,
+    content: {
+      type: String,
+    },
+    hash: {
+      words: [],
+      sigBytes: Number,
     },
   },
-});
+  { timestamps: true }
+);
 
 const Note = mongoose.model("message", NoteSchema);
 

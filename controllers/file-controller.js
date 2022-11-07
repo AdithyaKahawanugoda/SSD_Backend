@@ -1,27 +1,29 @@
 const FileModel = require("../models/file-model");
+const { cloudinary } = require("../utils/cloudinary");
+const SHA256 = require("crypto-js/sha256");
+const CryptoJS = require("crypto-js");
 
 exports.saveFile = async (req, res) => {
-  const { createdTime, updatedTime, allowedRoles, file } = req.body;
-
-  const time = { createdTime: createdTime, updatedTime: updatedTime };
-
+  const { encodedFile, objId } = req.body;
   const senderEmail = req.user.email;
-
   try {
-    // const uploadRes = await cloudinary.uploader.upload(ppEnc, {
-    //   upload_preset: "Profile_Pictures",
-    // });
-    const savedFile = await FileModel.create({
-      senderEmail,
-      allowedRoles,
-      time,
-      file,
-      // file: {
-      //   filePublicId: uploadRes.public_id,
-      //   fileSecURL: uploadRes.secure_url,
-      // },
-    });
-    return res.status(201).json({ msg: "File saved successfully" });
+    const integrityCheckResult = await integrityCheck(objId, encodedFile.data);
+    if (integrityCheckResult) {
+      const uploadRes = await cloudinary.uploader.upload(encodedFile, {
+        upload_preset: "ssd_files_directory",
+      });
+      console.log(uploadRes);
+      const encryptedPublicId = encryptText(uploadRes.public_id);
+      const encryptedSecureURL = encryptText(uploadRes.secure_url);
+      await FileModel.create({
+        senderEmail,
+        file: {
+          filePublicId: encryptedPublicId,
+          fileSecURL: encryptedSecureURL,
+        },
+      });
+      return res.status(201).json({ msg: "File saved successfully" });
+    }
   } catch (error) {
     res.status(500).json({
       msg: "Error in saveFile controller-" + error,
@@ -29,40 +31,39 @@ exports.saveFile = async (req, res) => {
   }
 };
 
-exports.deleteFileById = async (req, res) => {
-  const _id = req.params._id;
+exports.saveHash = async (req, res) => {
+  const { hash } = req.body;
+  const senderEmail = req.user.email;
   try {
-    await FileModel.deleteOne({ _id: _id });
-    return res.status(202).json({ msg: "File deleted successfully" });
+    const resObj = await FileModel.create({
+      hash,
+      senderEmail,
+    });
+    return res.status(201).json(resObj);
   } catch (error) {
     return res.status(500).json({
-      msg: "Error in deleteFileById controller-" + error,
+      msg: "Error in saveHash controller-" + error,
     });
   }
 };
 
-exports.getAllFiles = async (req, res) => {
-  try {
-    const allFiles = await FileModel.find();
-    res.status(200).send({ allFiles: allFiles });
-  } catch (error) {
-    res.status(500).json({
-      msg: "Error in getAllFiles controller-" + error,
-    });
-  }
+const encryptText = (data) => {
+  const encryptedText = CryptoJS.AES.encrypt(
+    data,
+    process.env.ENCRYPTION_KEY
+  ).toString();
+  return encryptedText;
 };
 
-exports.getFileById = async (req, res) => {
-  const id = req.params._id;
-
+const integrityCheck = async (objId, dataString) => {
+  const hashStringify = JSON.stringify(SHA256(dataString).words);
   try {
-    const file = await FileModel.findById({ _id: id });
-    res.status(200).send({ file: file });
-
-    return true;
+    const savedHashDoc = await FileModel.findById({ _id: objId });
+    const savedHashStringify = JSON.stringify(savedHashDoc.hash.words);
+    return hashStringify === savedHashStringify;
   } catch (error) {
-    res.status(500).json({
-      msg: "Error in getFileById controller-" + error,
-    });
+    return res
+      .status(400)
+      .json({ msg: "Error in integrityCheck controller-" + error });
   }
 };

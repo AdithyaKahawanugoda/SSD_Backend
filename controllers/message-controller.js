@@ -1,19 +1,26 @@
+require("dotenv").config();
 const MessageModel = require("../models/message-model");
+const SHA256 = require("crypto-js/sha256");
+const CryptoJS = require("crypto-js");
 
 exports.saveMessage = async (req, res) => {
-  const { content, createdTime, updatedTime, allowedRoles } = req.body;
-
-  const senderEmail = req.user.email;
-
-  const time = { createdTime: createdTime, updatedTime: updatedTime };
+  const { content, objId } = req.body;
+  const encryptedText = encryptText(content);
   try {
-    await MessageModel.create({
-      senderEmail,
-      content,
-      allowedRoles,
-      time,
-    });
-    return res.status(201).json({ msg: "New message saved" });
+    const integrityCheckResult = await integrityCheck(objId, content);
+    if (integrityCheckResult) {
+      await MessageModel.findByIdAndUpdate(
+        {
+          _id: objId,
+        },
+        {
+          $set: { content: encryptedText },
+        }
+      );
+      return res.status(201).json({ msg: "New message saved" });
+    } else {
+      return res.status(400).json({ msg: "Validation failed" });
+    }
   } catch (error) {
     return res.status(500).json({
       msg: "Error in createMessage controller-" + error,
@@ -21,60 +28,39 @@ exports.saveMessage = async (req, res) => {
   }
 };
 
-exports.deleteMessageById = async (req, res) => {
-  const _id = req.params._id;
+exports.saveHash = async (req, res) => {
+  const { hash } = req.body;
+  const senderEmail = req.user.email;
   try {
-    await MessageModel.deleteOne({ _id: _id });
-    return res.status(202).json({ msg: "Message deleted successfully" });
+    const resObj = await MessageModel.create({
+      hash,
+      senderEmail,
+    });
+    return res.status(201).json(resObj);
   } catch (error) {
     return res.status(500).json({
-      msg: "Error in deleteMessageById controller-" + error,
+      msg: "Error in saveHash controller-" + error,
     });
   }
 };
 
-exports.updateMessageById = async (req, res) => {
-  const messageData = req.body;
-  try {
-    const _id = messageData._id;
-    await MessageModel.findOneAndUpdate(
-      { _id },
-      {
-        $set: messageData,
-      }
-    );
-    return res.status(200).json({
-      msg: "Message updated successfully",
-    });
-  } catch (error) {
-    return res.status(500).json({
-      msg: "Error in updateNoteById controller-" + error,
-    });
-  }
+const encryptText = (content) => {
+  const encryptedText = CryptoJS.AES.encrypt(
+    content,
+    process.env.ENCRYPTION_KEY
+  ).toString();
+  return encryptedText;
 };
 
-exports.getAllMessages = async (req, res) => {
+const integrityCheck = async (objId, content) => {
+  const contentHashStringify = JSON.stringify(SHA256(content).words);
   try {
-    const allMessages = await MessageModel.find();
-    res.status(200).send({ allMessages: allMessages });
+    const savedHashDoc = await MessageModel.findById({ _id: objId });
+    const savedHashStringify = JSON.stringify(savedHashDoc.hash.words);
+    return contentHashStringify === savedHashStringify;
   } catch (error) {
-    res.status(500).json({
-      msg: "Error in getAllMessages controller-" + error,
-    });
-  }
-};
-
-exports.getMessageById = async (req, res) => {
-  const id = req.params._id;
-
-  try {
-    const message = await MessageModel.findById({ _id: id });
-    res.status(200).send({ message: message });
-
-    return true;
-  } catch (error) {
-    res.status(500).json({
-      msg: "Error in getMessageById controller-" + error,
-    });
+    return res
+      .status(400)
+      .json({ msg: "Error in integrityCheck controller-" + error });
   }
 };
