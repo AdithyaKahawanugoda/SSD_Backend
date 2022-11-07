@@ -19,7 +19,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: "https://ssd-secure-web-app.netlify.app",
     methods: "GET,POST,PUT,PATCH,DELETE",
     credentials: true,
   })
@@ -31,7 +31,7 @@ app.use(
     saveUninitialized: false,
     store: MongoStore.create({ mongoUrl: URI, dbName: "ssd_db" }),
     cookie: {
-      secure: false,
+      secure: true,
       expires: new Date(Date.now() + 2 * 60000).toISOString(),
       maxAge: 2 * 60000,
     },
